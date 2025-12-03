@@ -1,8 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { ConfigService } from '@nestjs/config';
-import { firstValueFrom } from 'rxjs';
-import FormData from 'form-data';
+import { Injectable, Logger } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { ConfigService } from "@nestjs/config";
+import { firstValueFrom } from "rxjs";
+import * as FormData from "form-data";
 
 interface StagedUploadTarget {
   url: string;
@@ -19,11 +19,12 @@ export class ShopifyService {
 
   constructor(
     private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
+    private readonly configService: ConfigService
   ) {
-    this.shopifyUrl = this.configService.get<string>('SHOPIFY_STORE_URL');
-    this.accessToken = this.configService.get<string>('SHOPIFY_ACCESS_TOKEN');
-    this.apiVersion = this.configService.get<string>('SHOPIFY_API_VERSION') || '2024-01';
+    this.shopifyUrl = this.configService.get<string>("SHOPIFY_STORE_URL");
+    this.accessToken = this.configService.get<string>("SHOPIFY_ACCESS_TOKEN");
+    this.apiVersion =
+      this.configService.get<string>("SHOPIFY_API_VERSION") || "2024-01";
   }
 
   /**
@@ -32,7 +33,7 @@ export class ShopifyService {
   async createProductWithMedia(
     title: string,
     description: string,
-    images?: Express.Multer.File[],
+    images?: Express.Multer.File[]
   ) {
     this.logger.log(`Creating product: ${title}`);
 
@@ -47,7 +48,7 @@ export class ShopifyService {
       if (images && images.length > 0) {
         this.logger.log(`Uploading ${images.length} images...`);
         const mediaResults = await this.uploadAndAttachMedia(productId, images);
-        
+
         return {
           product,
           media: mediaResults,
@@ -61,7 +62,7 @@ export class ShopifyService {
         totalImages: 0,
       };
     } catch (error) {
-      this.logger.error('Error creating product with media:', error);
+      this.logger.error("Error creating product with media:", error);
       throw error;
     }
   }
@@ -92,7 +93,7 @@ export class ShopifyService {
       input: {
         title,
         descriptionHtml: description,
-        status: 'ACTIVE',
+        status: "ACTIVE",
       },
     };
 
@@ -100,7 +101,7 @@ export class ShopifyService {
 
     if (response.productCreate.userErrors.length > 0) {
       throw new Error(
-        `Failed to create product: ${JSON.stringify(response.productCreate.userErrors)}`,
+        `Failed to create product: ${JSON.stringify(response.productCreate.userErrors)}`
       );
     }
 
@@ -112,7 +113,7 @@ export class ShopifyService {
    */
   private async uploadAndAttachMedia(
     productId: string,
-    images: Express.Multer.File[],
+    images: Express.Multer.File[]
   ) {
     const results = [];
 
@@ -128,12 +129,12 @@ export class ShopifyService {
         const media = await this.attachMediaToProduct(
           productId,
           stagedTarget.resourceUrl,
-          image.originalname,
+          image.originalname
         );
 
         results.push({
           filename: image.originalname,
-          status: 'success',
+          status: "success",
           media,
         });
 
@@ -142,7 +143,7 @@ export class ShopifyService {
         this.logger.error(`Failed to upload ${image.originalname}:`, error);
         results.push({
           filename: image.originalname,
-          status: 'failed',
+          status: "failed",
           error: error.message,
         });
       }
@@ -155,7 +156,7 @@ export class ShopifyService {
    * Step 2.1: Generate staged upload parameters
    */
   private async generateStagedUpload(
-    file: Express.Multer.File,
+    file: Express.Multer.File
   ): Promise<StagedUploadTarget> {
     const mutation = `
       mutation stagedUploadsCreate($input: [StagedUploadInput!]!) {
@@ -181,8 +182,8 @@ export class ShopifyService {
         {
           filename: file.originalname,
           mimeType: file.mimetype,
-          resource: 'IMAGE',
-          httpMethod: 'POST',
+          resource: "IMAGE",
+          httpMethod: "POST",
           fileSize: file.size.toString(),
         },
       ],
@@ -192,7 +193,7 @@ export class ShopifyService {
 
     if (response.stagedUploadsCreate.userErrors.length > 0) {
       throw new Error(
-        `Failed to generate staged upload: ${JSON.stringify(response.stagedUploadsCreate.userErrors)}`,
+        `Failed to generate staged upload: ${JSON.stringify(response.stagedUploadsCreate.userErrors)}`
       );
     }
 
@@ -204,7 +205,7 @@ export class ShopifyService {
    */
   private async uploadFileToStaged(
     stagedTarget: StagedUploadTarget,
-    file: Express.Multer.File,
+    file: Express.Multer.File
   ) {
     const formData = new FormData();
 
@@ -214,7 +215,7 @@ export class ShopifyService {
     });
 
     // Add the file last
-    formData.append('file', file.buffer, {
+    formData.append("file", file.buffer, {
       filename: file.originalname,
       contentType: file.mimetype,
     });
@@ -227,10 +228,13 @@ export class ShopifyService {
           },
           maxBodyLength: Infinity,
           maxContentLength: Infinity,
-        }),
+        })
       );
     } catch (error) {
-      this.logger.error('Upload to staged URL failed:', error.response?.data || error.message);
+      this.logger.error(
+        "Upload to staged URL failed:",
+        error.response?.data || error.message
+      );
       throw new Error(`Failed to upload to staged URL: ${error.message}`);
     }
   }
@@ -241,7 +245,7 @@ export class ShopifyService {
   private async attachMediaToProduct(
     productId: string,
     resourceUrl: string,
-    altText: string,
+    altText: string
   ) {
     const mutation = `
       mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
@@ -274,7 +278,7 @@ export class ShopifyService {
         {
           originalSource: resourceUrl,
           alt: altText,
-          mediaContentType: 'IMAGE',
+          mediaContentType: "IMAGE",
         },
       ],
     };
@@ -283,7 +287,7 @@ export class ShopifyService {
 
     if (response.productCreateMedia.mediaUserErrors.length > 0) {
       throw new Error(
-        `Failed to attach media: ${JSON.stringify(response.productCreateMedia.mediaUserErrors)}`,
+        `Failed to attach media: ${JSON.stringify(response.productCreateMedia.mediaUserErrors)}`
       );
     }
 
@@ -306,22 +310,25 @@ export class ShopifyService {
           },
           {
             headers: {
-              'Content-Type': 'application/json',
-              'X-Shopify-Access-Token': this.accessToken,
+              "Content-Type": "application/json",
+              "X-Shopify-Access-Token": this.accessToken,
             },
-          },
-        ),
+          }
+        )
       );
 
       if (response.data.errors) {
         throw new Error(
-          `GraphQL errors: ${JSON.stringify(response.data.errors)}`,
+          `GraphQL errors: ${JSON.stringify(response.data.errors)}`
         );
       }
 
       return response.data.data;
     } catch (error) {
-      this.logger.error('GraphQL request failed:', error.response?.data || error.message);
+      this.logger.error(
+        "GraphQL request failed:",
+        error.response?.data || error.message
+      );
       throw error;
     }
   }
