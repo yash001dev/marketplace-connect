@@ -5,35 +5,135 @@ import {
   UseInterceptors,
   UploadedFiles,
   BadRequestException,
-} from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
-import { ProductService } from './product.service';
-import { CreateProductDto } from './dto/create-product.dto';
+  Get,
+} from "@nestjs/common";
+import { FilesInterceptor } from "@nestjs/platform-express";
+import { ProductService } from "./product.service";
+import { CreateProductDto } from "./dto/create-product.dto";
+import { AIVisionService } from "../ai/ai-vision.service";
 
-@Controller('products')
+@Controller("products")
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(
+    private readonly productService: ProductService,
+    private readonly aiVisionService: AIVisionService
+  ) {}
 
-  @Post()
-  @UseInterceptors(FilesInterceptor('images', 10))
-  async createProduct(
-    @Body() createProductDto: CreateProductDto,
-    @UploadedFiles() images?: Express.Multer.File[],
-  ) {
+  @Post("analyze-image")
+  @UseInterceptors(FilesInterceptor("images", 10))
+  async analyzeProductImage(@UploadedFiles() images?: Express.Multer.File[]) {
+    if (!images || images.length === 0) {
+      throw new BadRequestException("Please upload at least one image");
+    }
+
     try {
-      const result = await this.productService.createProduct(
-        createProductDto,
-        images,
+      // Check if AI Vision is configured
+      if (!this.aiVisionService.isConfigured()) {
+        throw new BadRequestException(
+          "AI Vision not configured. Please add GEMINI_API_KEY to .env file. Get your free key at: https://aistudio.google.com/app/apikey"
+        );
+      }
+
+      // Analyze the first image (main product image)
+      const analysis = await this.aiVisionService.analyzeProductImage(
+        images[0].buffer,
+        images[0].mimetype
       );
+
       return {
         success: true,
-        data: result,
-        message: 'Product created successfully',
+        analysis,
+        imageCount: images.length,
+        message: "Product image analyzed successfully",
       };
     } catch (error) {
       throw new BadRequestException({
         success: false,
-        message: error.message || 'Failed to create product',
+        message: error.message || "Failed to analyze image",
+        error: error.message,
+      });
+    }
+  }
+
+  @Post("create-with-ai")
+  @UseInterceptors(FilesInterceptor("images", 10))
+  async createProductWithAI(
+    @Body() body: any,
+    @UploadedFiles() images?: Express.Multer.File[]
+  ) {
+    if (!images || images.length === 0) {
+      throw new BadRequestException("Please upload at least one image");
+    }
+
+    try {
+      // Check if AI Vision is configured
+      if (!this.aiVisionService.isConfigured()) {
+        throw new BadRequestException("AI Vision not configured");
+      }
+
+      // Step 1: Analyze images with AI
+      const analysis = await this.aiVisionService.analyzeProductImage(
+        images[0].buffer,
+        images[0].mimetype
+      );
+
+      // Step 2: Use AI-generated data (allow override from body)
+      const productDto: CreateProductDto = {
+        title: body.title || analysis.title,
+        description: body.description || analysis.description,
+        marketplace: body.marketplace,
+      };
+
+      // Step 3: Create product on selected marketplace
+      const result = await this.productService.createProduct(
+        productDto,
+        images
+      );
+
+      return {
+        success: true,
+        data: result,
+        aiAnalysis: analysis,
+        message: "Product created successfully with AI assistance",
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        success: false,
+        message: error.message || "Failed to create product",
+        error: error.message,
+      });
+    }
+  }
+
+  @Get("ai-status")
+  async getAIStatus() {
+    const testResult = await this.aiVisionService.testConnection();
+    return {
+      configured: this.aiVisionService.isConfigured(),
+      ...testResult,
+    };
+  }
+
+  @Post()
+  @UseInterceptors(FilesInterceptor("images", 10))
+  async createProduct(
+    @Body() createProductDto: CreateProductDto,
+    @UploadedFiles() images?: Express.Multer.File[]
+  ) {
+    try {
+      const result = await this.productService.createProduct(
+        createProductDto,
+        images
+      );
+      return {
+        success: true,
+        data: result,
+        message: "Product created successfully",
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        success: false,
+        message: error.message || "Failed to create product",
         error: error.response?.data || error.message,
       });
     }

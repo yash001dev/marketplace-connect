@@ -1,6 +1,12 @@
+'use client'
+
+import { useState } from 'react'
 import ProductForm from '@/components/ProductForm'
+import AIProductForm from '@/components/AIProductForm'
 
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<'manual' | 'ai'>('ai')
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
@@ -13,7 +19,32 @@ export default function Home() {
           </p>
         </div>
         
-        <ProductForm />
+        {/* Tab Navigation */}
+        <div className="mb-6 bg-white rounded-lg shadow-md p-2 flex gap-2">
+          <button
+            onClick={() => setActiveTab('ai')}
+            className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${
+              activeTab === 'ai'
+                ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            ✨ AI-Powered
+          </button>
+          <button
+            onClick={() => setActiveTab('manual')}
+            className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${
+              activeTab === 'manual'
+                ? 'bg-primary-600 text-white shadow-lg'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            ✍️ Manual Entry
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'ai' ? <AIProductForm /> : <ProductForm />}
 
         <div className="mt-12 bg-white rounded-lg shadow-md p-6">
           <h2 className="text-2xl font-semibold mb-4 text-gray-800">

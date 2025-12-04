@@ -1,10 +1,11 @@
-import { Module } from '@nestjs/common';
-import { ProductController } from './product.controller';
-import { ProductService } from './product.service';
-import { MarketplaceModule } from '../marketplace/marketplace.module';
+import { Module } from "@nestjs/common";
+import { ProductController } from "./product.controller";
+import { ProductService } from "./product.service";
+import { MarketplaceModule } from "../marketplace/marketplace.module";
+import { AIModule } from "../ai/ai.module";
 
 @Module({
-  imports: [MarketplaceModule],
+  imports: [MarketplaceModule, AIModule],
   controllers: [ProductController],
   providers: [ProductService],
 })
