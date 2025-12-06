@@ -16,6 +16,8 @@ export default function ProductForm() {
   const [description, setDescription] = useState('')
   const [tags, setTags] = useState('')
   const [features, setFeatures] = useState('')
+  const [price, setPrice] = useState('')
+  const [compareAtPrice, setCompareAtPrice] = useState('')
   const [marketplace, setMarketplace] = useState<MarketplaceType>('shopify')
   const [images, setImages] = useState<ImageFile[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -59,6 +61,17 @@ export default function ProductForm() {
       return
     }
 
+    if (!price.trim()) {
+      toast.error('Please enter a product price')
+      return
+    }
+
+    const priceNum = parseFloat(price)
+    if (isNaN(priceNum) || priceNum <= 0) {
+      toast.error('Please enter a valid price')
+      return
+    }
+
     setIsSubmitting(true)
     const loadingToast = toast.loading('Creating product...')
 
@@ -67,6 +80,13 @@ export default function ProductForm() {
       formData.append('title', title)
       formData.append('description', description)
       formData.append('marketplace', marketplace)
+      formData.append('price', price)
+      
+      // If compareAtPrice is empty, automatically double the price
+      const comparePrice = compareAtPrice.trim() 
+        ? compareAtPrice 
+        : (parseFloat(price) * 2).toString()
+      formData.append('compareAtPrice', comparePrice)
       
       if (tags.trim()) {
         formData.append('tags', tags)
@@ -102,6 +122,8 @@ export default function ProductForm() {
       setDescription('')
       setTags('')
       setFeatures('')
+      setPrice('')
+      setCompareAtPrice('')
       setImages([])
       
       console.log('Product created:', data.data)
@@ -217,6 +239,45 @@ export default function ProductForm() {
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             placeholder="Enter each feature on a new line"
           />
+        </div>
+
+        {/* Price Fields */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Price */}
+          <div>
+            <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
+              Price *
+            </label>
+            <input
+              type="number"
+              id="price"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              step="0.01"
+              min="0"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="0.00"
+              required
+            />
+          </div>
+
+          {/* Compare at Price */}
+          <div>
+            <label htmlFor="compareAtPrice" className="block text-sm font-medium text-gray-700 mb-2">
+              Compare at Price
+              <span className="text-xs text-gray-500 ml-2">(optional, defaults to 2x price)</span>
+            </label>
+            <input
+              type="number"
+              id="compareAtPrice"
+              value={compareAtPrice}
+              onChange={(e) => setCompareAtPrice(e.target.value)}
+              step="0.01"
+              min="0"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder={price ? (parseFloat(price) * 2).toFixed(2) : '0.00'}
+            />
+          </div>
         </div>
 
         {/* Image Upload */}

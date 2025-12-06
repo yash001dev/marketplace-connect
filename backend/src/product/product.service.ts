@@ -16,8 +16,15 @@ export class ProductService {
     createProductDto: CreateProductDto,
     images?: Express.Multer.File[]
   ) {
-    const { marketplace, title, description, tags, features } =
-      createProductDto;
+    const {
+      marketplace,
+      title,
+      description,
+      tags,
+      features,
+      price,
+      compareAtPrice,
+    } = createProductDto;
 
     switch (marketplace) {
       case MarketplaceType.SHOPIFY:
@@ -26,7 +33,9 @@ export class ProductService {
           description,
           images,
           tags,
-          features
+          features,
+          price,
+          compareAtPrice
         );
 
       case MarketplaceType.AMAZON:

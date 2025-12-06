@@ -35,7 +35,9 @@ export class ShopifyService {
     description: string,
     images?: Express.Multer.File[],
     tags?: string,
-    features?: string
+    features?: string,
+    price?: number,
+    compareAtPrice?: number
   ) {
     this.logger.log(`Creating product: ${title}`);
 
@@ -43,7 +45,7 @@ export class ShopifyService {
       // Step 0: Get all publication IDs for sales channels
       const publicationIds = await this.getAllPublications();
 
-      // Step 1: Create the product first
+      // Step 1: Create the product first (without variants)
       const product = await this.createProduct(
         title,
         description,
@@ -55,7 +57,18 @@ export class ShopifyService {
 
       this.logger.log(`Product created with ID: ${productId}`);
 
-      // Step 2: If images are provided, upload and attach them
+      // Step 2: Add variant with pricing using productVariantsBulkCreate
+      if (price !== undefined && price > 0) {
+        const variant = await this.createProductVariant(
+          productId,
+          price,
+          compareAtPrice
+        );
+        product.variants = { edges: [{ node: variant }] };
+        this.logger.log(`Product variant created with pricing`);
+      }
+
+      // Step 3: If images are provided, upload and attach them
       if (images && images.length > 0) {
         this.logger.log(`Uploading ${images.length} images...`);
         const mediaResults = await this.uploadAndAttachMedia(productId, images);
@@ -79,7 +92,7 @@ export class ShopifyService {
   }
 
   /**
-   * Step 1: Create a basic product without media
+   * Step 1: Create a basic product without media and without variants
    */
   private async createProduct(
     title: string,
@@ -187,7 +200,64 @@ export class ShopifyService {
   }
 
   /**
-   * Step 2: Upload media and attach to product
+   * Step 2: Create product variant with pricing using productVariantsBulkCreate
+   */
+  private async createProductVariant(
+    productId: string,
+    price: number,
+    compareAtPrice?: number
+  ) {
+    const mutation = `
+      mutation productVariantsBulkCreate($productId: ID!, $variants: [ProductVariantsBulkInput!]!, $strategy: ProductVariantsBulkCreateStrategy) {
+        productVariantsBulkCreate(productId: $productId, variants: $variants, strategy: $strategy) {
+          productVariants {
+            id
+            title
+            price
+            compareAtPrice
+            selectedOptions {
+              name
+              value
+            }
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      productId,
+      strategy: "REMOVE_STANDALONE_VARIANT",
+      variants: [
+        {
+          price: price,
+          compareAtPrice: compareAtPrice || null,
+          optionValues: [
+            {
+              optionName: "Title",
+              name: "Default Title",
+            },
+          ],
+        },
+      ],
+    };
+
+    const response = await this.graphqlRequest(mutation, variables);
+
+    if (response.productVariantsBulkCreate.userErrors.length > 0) {
+      throw new Error(
+        `Failed to create product variant: ${JSON.stringify(response.productVariantsBulkCreate.userErrors)}`
+      );
+    }
+
+    return response.productVariantsBulkCreate.productVariants[0];
+  }
+
+  /**
+   * Step 3: Upload media and attach to product
    */
   private async uploadAndAttachMedia(
     productId: string,

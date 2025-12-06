@@ -4,7 +4,10 @@ import {
   IsArray,
   IsOptional,
   IsEnum,
+  IsNumber,
+  IsPositive,
 } from "class-validator";
+import { Transform } from "class-transformer";
 
 export enum MarketplaceType {
   SHOPIFY = "shopify",
@@ -36,4 +39,16 @@ export class CreateProductDto {
   @IsString()
   @IsOptional()
   features?: string;
+
+  @Transform(({ value }) => parseFloat(value))
+  @IsNumber()
+  @IsPositive()
+  @IsOptional()
+  price?: number;
+
+  @Transform(({ value }) => parseFloat(value))
+  @IsNumber()
+  @IsPositive()
+  @IsOptional()
+  compareAtPrice?: number;
 }
