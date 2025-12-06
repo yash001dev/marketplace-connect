@@ -1,9 +1,15 @@
-import { IsString, IsNotEmpty, IsArray, IsOptional, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsArray,
+  IsOptional,
+  IsEnum,
+} from "class-validator";
 
 export enum MarketplaceType {
-  SHOPIFY = 'shopify',
-  AMAZON = 'amazon',
-  MEESHO = 'meesho',
+  SHOPIFY = "shopify",
+  AMAZON = "amazon",
+  MEESHO = "meesho",
 }
 
 export class CreateProductDto {
@@ -22,4 +28,12 @@ export class CreateProductDto {
   @IsArray()
   @IsOptional()
   imageUrls?: string[];
+
+  @IsString()
+  @IsOptional()
+  tags?: string;
+
+  @IsString()
+  @IsOptional()
+  features?: string;
 }

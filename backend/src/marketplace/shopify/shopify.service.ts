@@ -33,13 +33,20 @@ export class ShopifyService {
   async createProductWithMedia(
     title: string,
     description: string,
-    images?: Express.Multer.File[]
+    images?: Express.Multer.File[],
+    tags?: string,
+    features?: string
   ) {
     this.logger.log(`Creating product: ${title}`);
 
     try {
       // Step 1: Create the product first
-      const product = await this.createProduct(title, description);
+      const product = await this.createProduct(
+        title,
+        description,
+        tags,
+        features
+      );
       const productId = product.id;
 
       this.logger.log(`Product created with ID: ${productId}`);
@@ -70,7 +77,44 @@ export class ShopifyService {
   /**
    * Step 1: Create a basic product without media
    */
-  private async createProduct(title: string, description: string) {
+  private async createProduct(
+    title: string,
+    description: string,
+    tags?: string,
+    features?: string
+  ) {
+    // Convert comma-separated tags to array
+    const tagsArray = tags
+      ? tags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter((tag) => tag)
+      : [];
+
+    // Convert features to rich text JSON format
+    let featuresRichText = "";
+    if (features) {
+      const featureLines = features
+        .split("\n")
+        .map((f) => f.trim())
+        .filter((f) => f);
+      const listItems = featureLines.map((feature) => ({
+        type: "list-item",
+        children: [{ type: "text", value: feature }],
+      }));
+
+      featuresRichText = JSON.stringify({
+        type: "root",
+        children: [
+          {
+            type: "list",
+            listType: "unordered",
+            children: listItems,
+          },
+        ],
+      });
+    }
+
     const mutation = `
       mutation createProduct($input: ProductInput!) {
         productCreate(input: $input) {
@@ -80,6 +124,15 @@ export class ShopifyService {
             description
             status
             createdAt
+            tags
+            metafields(first: 10) {
+              nodes {
+                id
+                namespace
+                key
+                value
+              }
+            }
           }
           userErrors {
             field
@@ -89,13 +142,26 @@ export class ShopifyService {
       }
     `;
 
-    const variables = {
+    const variables: any = {
       input: {
         title,
         descriptionHtml: description,
         status: "ACTIVE",
+        tags: tagsArray,
       },
     };
+
+    // Add metafield for features if provided
+    if (featuresRichText) {
+      variables.input.metafields = [
+        {
+          namespace: "custom",
+          key: "new_custom_description",
+          value: featuresRichText,
+          type: "rich_text_field",
+        },
+      ];
+    }
 
     const response = await this.graphqlRequest(mutation, variables);
 

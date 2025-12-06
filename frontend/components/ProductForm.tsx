@@ -14,6 +14,8 @@ interface ImageFile extends File {
 export default function ProductForm() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [tags, setTags] = useState('')
+  const [features, setFeatures] = useState('')
   const [marketplace, setMarketplace] = useState<MarketplaceType>('shopify')
   const [images, setImages] = useState<ImageFile[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -52,6 +54,11 @@ export default function ProductForm() {
       return
     }
 
+    if (description.length > 130) {
+      toast.error('Description must be 130 characters or less')
+      return
+    }
+
     setIsSubmitting(true)
     const loadingToast = toast.loading('Creating product...')
 
@@ -60,6 +67,14 @@ export default function ProductForm() {
       formData.append('title', title)
       formData.append('description', description)
       formData.append('marketplace', marketplace)
+      
+      if (tags.trim()) {
+        formData.append('tags', tags)
+      }
+      
+      if (features.trim()) {
+        formData.append('features', features)
+      }
 
       images.forEach((image) => {
         formData.append('images', image)
@@ -85,6 +100,8 @@ export default function ProductForm() {
       // Reset form
       setTitle('')
       setDescription('')
+      setTags('')
+      setFeatures('')
       setImages([])
       
       console.log('Product created:', data.data)
@@ -156,15 +173,49 @@ export default function ProductForm() {
         <div>
           <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
             Product Description
+            <span className="text-xs text-gray-500 ml-2">({description.length}/130 characters)</span>
           </label>
           <textarea
             id="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
+            maxLength={130}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            placeholder="Enter product description"
+            placeholder="Enter product description (max 130 characters)"
             required
+          />
+        </div>
+
+        {/* Tags */}
+        <div>
+          <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-2">
+            Tags
+            <span className="text-xs text-gray-500 ml-2">(comma-separated)</span>
+          </label>
+          <input
+            type="text"
+            id="tags"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            placeholder="e.g., BPA-free, eco-friendly, insulated"
+          />
+        </div>
+
+        {/* Features (Custom Metafield) */}
+        <div>
+          <label htmlFor="features" className="block text-sm font-medium text-gray-700 mb-2">
+            Features
+            <span className="text-xs text-gray-500 ml-2">(will be converted to bullet points)</span>
+          </label>
+          <textarea
+            id="features"
+            value={features}
+            onChange={(e) => setFeatures(e.target.value)}
+            rows={4}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            placeholder="Enter each feature on a new line"
           />
         </div>
 
