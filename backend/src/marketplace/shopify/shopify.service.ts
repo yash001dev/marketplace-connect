@@ -40,12 +40,16 @@ export class ShopifyService {
     this.logger.log(`Creating product: ${title}`);
 
     try {
+      // Step 0: Get all publication IDs for sales channels
+      const publicationIds = await this.getAllPublications();
+
       // Step 1: Create the product first
       const product = await this.createProduct(
         title,
         description,
         tags,
-        features
+        features,
+        publicationIds
       );
       const productId = product.id;
 
@@ -81,7 +85,8 @@ export class ShopifyService {
     title: string,
     description: string,
     tags?: string,
-    features?: string
+    features?: string,
+    publicationIds?: string[]
   ) {
     // Convert comma-separated tags to array
     const tagsArray = tags
@@ -150,6 +155,13 @@ export class ShopifyService {
         tags: tagsArray,
       },
     };
+
+    // Publish to all sales channels
+    if (publicationIds && publicationIds.length > 0) {
+      variables.input.publications = publicationIds.map((id) => ({
+        publicationId: id,
+      }));
+    }
 
     // Add metafield for features if provided
     if (featuresRichText) {
@@ -433,5 +445,37 @@ export class ShopifyService {
     const variables = { id: productId };
     const response = await this.graphqlRequest(query, variables);
     return response.product;
+  }
+
+  /**
+   * Get all publication IDs (sales channels) to publish the product to all channels
+   */
+  private async getAllPublications(): Promise<string[]> {
+    const query = `
+      query {
+        publications(first: 50) {
+          edges {
+            node {
+              id
+              name
+            }
+          }
+        }
+      }
+    `;
+
+    try {
+      const response = await this.graphqlRequest(query, {});
+      const publications = response.publications.edges.map(
+        (edge: any) => edge.node.id
+      );
+      this.logger.log(`Found ${publications.length} sales channels`);
+      return publications;
+    } catch (error) {
+      this.logger.warn(
+        "Failed to fetch publications, product will use default channel"
+      );
+      return [];
+    }
   }
 }
