@@ -18,6 +18,7 @@ export default function ProductForm() {
   const [features, setFeatures] = useState('')
   const [price, setPrice] = useState('')
   const [compareAtPrice, setCompareAtPrice] = useState('')
+  const [inventory, setInventory] = useState('')
   const [marketplace, setMarketplace] = useState<MarketplaceType>('shopify')
   const [images, setImages] = useState<ImageFile[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -72,6 +73,17 @@ export default function ProductForm() {
       return
     }
 
+    if (!inventory.trim()) {
+      toast.error('Please enter inventory quantity')
+      return
+    }
+
+    const inventoryNum = parseInt(inventory)
+    if (isNaN(inventoryNum) || inventoryNum < 0) {
+      toast.error('Please enter a valid inventory quantity')
+      return
+    }
+
     setIsSubmitting(true)
     const loadingToast = toast.loading('Creating product...')
 
@@ -87,6 +99,7 @@ export default function ProductForm() {
         ? compareAtPrice 
         : (parseFloat(price) * 2).toString()
       formData.append('compareAtPrice', comparePrice)
+      formData.append('inventory', inventory)
       
       if (tags.trim()) {
         formData.append('tags', tags)
@@ -124,6 +137,7 @@ export default function ProductForm() {
       setFeatures('')
       setPrice('')
       setCompareAtPrice('')
+      setInventory('')
       setImages([])
       
       console.log('Product created:', data.data)
@@ -278,6 +292,24 @@ export default function ProductForm() {
               placeholder={price ? (parseFloat(price) * 2).toFixed(2) : '0.00'}
             />
           </div>
+        </div>
+
+        {/* Inventory */}
+        <div>
+          <label htmlFor="inventory" className="block text-sm font-medium text-gray-700 mb-2">
+            Inventory Quantity *
+          </label>
+          <input
+            type="number"
+            id="inventory"
+            value={inventory}
+            onChange={(e) => setInventory(e.target.value)}
+            step="1"
+            min="0"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            placeholder="Enter available quantity"
+            required
+          />
         </div>
 
         {/* Image Upload */}

@@ -37,7 +37,8 @@ export class ShopifyService {
     tags?: string,
     features?: string,
     price?: number,
-    compareAtPrice?: number
+    compareAtPrice?: number,
+    inventory?: number
   ) {
     this.logger.log(`Creating product: ${title}`);
 
@@ -59,10 +60,18 @@ export class ShopifyService {
 
       // Step 2: Add variant with pricing using productVariantsBulkCreate
       if (price !== undefined && price > 0) {
+        // Get primary location ID if inventory is provided
+        let locationId: string | undefined;
+        if (inventory !== undefined && inventory >= 0) {
+          locationId = await this.getPrimaryLocationId();
+        }
+
         const variant = await this.createProductVariant(
           productId,
           price,
-          compareAtPrice
+          compareAtPrice,
+          inventory,
+          locationId
         );
         product.variants = { edges: [{ node: variant }] };
         this.logger.log(`Product variant created with pricing`);
@@ -205,7 +214,9 @@ export class ShopifyService {
   private async createProductVariant(
     productId: string,
     price: number,
-    compareAtPrice?: number
+    compareAtPrice?: number,
+    inventory?: number,
+    locationId?: string
   ) {
     const mutation = `
       mutation productVariantsBulkCreate($productId: ID!, $variants: [ProductVariantsBulkInput!]!, $strategy: ProductVariantsBulkCreateStrategy) {
@@ -215,6 +226,7 @@ export class ShopifyService {
             title
             price
             compareAtPrice
+            inventoryQuantity
             selectedOptions {
               name
               value
@@ -228,21 +240,31 @@ export class ShopifyService {
       }
     `;
 
+    const variantInput: any = {
+      price: price,
+      compareAtPrice: compareAtPrice || null,
+      optionValues: [
+        {
+          optionName: "Title",
+          name: "Default Title",
+        },
+      ],
+    };
+
+    // Add inventory tracking if provided and we have a valid location ID
+    if (inventory !== undefined && inventory >= 0 && locationId) {
+      variantInput.inventoryQuantities = [
+        {
+          availableQuantity: inventory,
+          locationId: locationId,
+        },
+      ];
+    }
+
     const variables = {
       productId,
       strategy: "REMOVE_STANDALONE_VARIANT",
-      variants: [
-        {
-          price: price,
-          compareAtPrice: compareAtPrice || null,
-          optionValues: [
-            {
-              optionName: "Title",
-              name: "Default Title",
-            },
-          ],
-        },
-      ],
+      variants: [variantInput],
     };
 
     const response = await this.graphqlRequest(mutation, variables);
@@ -546,6 +568,38 @@ export class ShopifyService {
         "Failed to fetch publications, product will use default channel"
       );
       return [];
+    }
+  }
+
+  /**
+   * Get primary location ID for inventory tracking
+   */
+  private async getPrimaryLocationId(): Promise<string> {
+    const query = `
+      query {
+        locations(first: 1) {
+          edges {
+            node {
+              id
+              name
+              isActive
+            }
+          }
+        }
+      }
+    `;
+
+    try {
+      const response = await this.graphqlRequest(query, {});
+      if (response.locations.edges.length > 0) {
+        const locationId = response.locations.edges[0].node.id;
+        this.logger.log(`Using location ID: ${locationId}`);
+        return locationId;
+      }
+      throw new Error("No locations found");
+    } catch (error) {
+      this.logger.error("Failed to fetch location ID:", error);
+      throw new Error("Unable to set inventory: No locations available");
     }
   }
 }

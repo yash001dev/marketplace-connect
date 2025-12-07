@@ -51,4 +51,9 @@ export class CreateProductDto {
   @IsPositive()
   @IsOptional()
   compareAtPrice?: number;
+
+  @Transform(({ value }) => parseInt(value))
+  @IsNumber()
+  @IsOptional()
+  inventory?: number;
 }

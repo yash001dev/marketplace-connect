@@ -24,6 +24,7 @@ export class ProductService {
       features,
       price,
       compareAtPrice,
+      inventory,
     } = createProductDto;
 
     switch (marketplace) {
@@ -35,7 +36,8 @@ export class ProductService {
           tags,
           features,
           price,
-          compareAtPrice
+          compareAtPrice,
+          inventory
         );
 
       case MarketplaceType.AMAZON:
