@@ -6,17 +6,20 @@ import {
   UploadedFiles,
   BadRequestException,
   Get,
+  UploadedFile,
 } from "@nestjs/common";
-import { FilesInterceptor } from "@nestjs/platform-express";
+import { FilesInterceptor, FileInterceptor } from "@nestjs/platform-express";
 import { ProductService } from "./product.service";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { AIVisionService } from "../ai/ai-vision.service";
+import { BulkUploadService, BulkUploadResult } from "./bulk-upload.service";
 
 @Controller("products")
 export class ProductController {
   constructor(
     private readonly productService: ProductService,
-    private readonly aiVisionService: AIVisionService
+    private readonly aiVisionService: AIVisionService,
+    private readonly bulkUploadService: BulkUploadService
   ) {}
 
   @Post("analyze-image")
@@ -135,6 +138,46 @@ export class ProductController {
         success: false,
         message: error.message || "Failed to create product",
         error: error.response?.data || error.message,
+      });
+    }
+  }
+
+  @Post("bulk-upload")
+  @UseInterceptors(FileInterceptor("csvFile"))
+  async bulkUploadProducts(
+    @UploadedFile() csvFile: Express.Multer.File,
+    @Body("marketplace") marketplace: string
+  ) {
+    if (!csvFile) {
+      throw new BadRequestException("Please upload a CSV file");
+    }
+
+    if (!marketplace) {
+      throw new BadRequestException("Marketplace is required");
+    }
+
+    try {
+      const results = await this.bulkUploadService.processBulkUpload(
+        csvFile,
+        marketplace
+      );
+
+      const successCount = results.filter((r) => r.success).length;
+      const failedCount = results.filter((r) => !r.success).length;
+
+      return {
+        success: true,
+        totalProcessed: results.length,
+        successCount,
+        failedCount,
+        results,
+        message: `Bulk upload completed. ${successCount} succeeded, ${failedCount} failed.`,
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        success: false,
+        message: error.message || "Failed to process bulk upload",
+        error: error.message,
       });
     }
   }

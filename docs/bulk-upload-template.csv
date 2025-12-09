@@ -1,0 +1,4 @@
+title,description,folderPath,price,compareAtPrice,inventory,tags,features
+"Premium Wireless Headphones","High-quality over-ear wireless headphones with noise cancellation","C:/Projects/MarketPlace/product-images/headphones",79.99,159.98,50,"headphones,wireless,audio","Noise Cancellation,40hr Battery,Bluetooth 5.0"
+"Smart Watch Series 5","Advanced fitness tracking smartwatch with heart rate monitor","C:/Projects/MarketPlace/product-images/smartwatch",199.99,,25,"smartwatch,fitness,wearable","Heart Rate Monitor,GPS Tracking,Waterproof"
+"Laptop Stand Aluminum","Ergonomic aluminum laptop stand for better posture","C:/Projects/MarketPlace/product-images/laptop-stand",49.99,99.98,100,"accessories,desk,ergonomic","Height Adjustable,Portable,Compatible with all laptops"

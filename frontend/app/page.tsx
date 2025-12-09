@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import ProductForm from '@/components/ProductForm'
 import AIProductForm from '@/components/AIProductForm'
+import BulkUploadForm from '@/components/BulkUploadForm'
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'manual' | 'ai'>('ai')
+  const [activeTab, setActiveTab] = useState<'manual' | 'ai' | 'bulk'>('ai')
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -41,10 +42,26 @@ export default function Home() {
           >
             ✍️ Manual Entry
           </button>
+          <button
+            onClick={() => setActiveTab('bulk')}
+            className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${
+              activeTab === 'bulk'
+                ? 'bg-green-600 text-white shadow-lg'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            📁 Bulk Upload
+          </button>
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'ai' ? <AIProductForm /> : <ProductForm />}
+        {activeTab === 'ai' ? (
+          <AIProductForm />
+        ) : activeTab === 'manual' ? (
+          <ProductForm />
+        ) : (
+          <BulkUploadForm />
+        )}
 
         <div className="mt-12 bg-white rounded-lg shadow-md p-6">
           <h2 className="text-2xl font-semibold mb-4 text-gray-800">

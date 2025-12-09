@@ -10,6 +10,20 @@ A full-stack application that allows you to easily add products with media to mu
   - Upload multiple product images
   - Automatic media staging and attachment
   - GraphQL Admin API integration
+  - Product tags and custom metafields
+  - Price and compare-at-price with auto-doubling
+  - Inventory tracking with location management
+  - Sales channel publishing (all channels)
+  - Rich text features as bullet points
+
+### Product Upload Methods
+- ✨ **AI-Powered Upload** - Analyze product images with Google Gemini AI
+- ✍️ **Manual Entry** - Direct product data entry with form validation
+- 📁 **Bulk Upload** - Upload multiple products at once from CSV files
+  - Process multiple products from CSV spreadsheet
+  - Auto-load images from specified folders
+  - Batch processing with individual error handling
+  - Detailed success/failure reporting
 
 ### Coming Soon
 - 🚧 **Amazon Integration** - In development
@@ -204,14 +218,72 @@ Content-Type: multipart/form-data
 }
 ```
 
+#### Bulk Upload Products
+```http
+POST /products/bulk-upload
+Content-Type: multipart/form-data
+```
+
+**Body:**
+- `csvFile` (file, required) - CSV file with product data
+- `marketplace` (enum, required) - One of: `shopify`, `amazon`, `meesho`
+
+**CSV Format:**
+```csv
+title,description,folderPath,price,compareAtPrice,inventory,tags,features
+"Product 1","Description 1","C:/path/to/images/product1",99.99,199.98,50,"tag1,tag2","feature1,feature2"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "totalProcessed": 10,
+  "successCount": 9,
+  "failedCount": 1,
+  "results": [
+    {
+      "success": true,
+      "productTitle": "Product 1",
+      "data": { /* product data */ }
+    },
+    {
+      "success": false,
+      "productTitle": "Product 2",
+      "error": "Folder not found"
+    }
+  ],
+  "message": "Bulk upload completed. 9 succeeded, 1 failed."
+}
+```
+
+See [Bulk Upload Guide](docs/BULK_UPLOAD_GUIDE.md) for detailed instructions.
+
 ## 🎨 Frontend Usage
 
+### Single Product Upload
+
 1. Open `http://localhost:3000` in your browser
-2. Select a marketplace (currently only Shopify is available)
-3. Enter product title and description
-4. Drag & drop or click to upload product images
-5. Click "Create Product"
-6. Wait for success notification
+2. Choose upload method:
+   - **AI-Powered**: Upload images and let AI generate product details
+   - **Manual Entry**: Fill out product form manually
+3. Select a marketplace (currently only Shopify is available)
+4. Enter product details (title, description, price, tags, features, etc.)
+5. Drag & drop or click to upload product images
+6. Click "Create Product"
+7. Wait for success notification
+
+### Bulk Product Upload
+
+1. Prepare a CSV file with product data (see [template](docs/bulk-upload-template.csv))
+2. Organize product images into separate folders
+3. Navigate to the **Bulk Upload** tab
+4. Select marketplace
+5. Upload CSV file
+6. Click "Upload Products"
+7. Monitor progress and review results
+
+For detailed bulk upload instructions, see [Bulk Upload Guide](docs/BULK_UPLOAD_GUIDE.md).
 
 ## 🔧 Development
 

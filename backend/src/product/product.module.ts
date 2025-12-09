@@ -3,10 +3,11 @@ import { ProductController } from "./product.controller";
 import { ProductService } from "./product.service";
 import { MarketplaceModule } from "../marketplace/marketplace.module";
 import { AIModule } from "../ai/ai.module";
+import { BulkUploadService } from "./bulk-upload.service";
 
 @Module({
   imports: [MarketplaceModule, AIModule],
   controllers: [ProductController],
-  providers: [ProductService],
+  providers: [ProductService, BulkUploadService],
 })
 export class ProductModule {}
