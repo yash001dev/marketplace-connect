@@ -27,6 +27,13 @@ export default function BulkUploadForm() {
   const [uploadResults, setUploadResults] = useState<BulkUploadResponse | null>(
     null
   );
+  
+  // Bulk default values
+  const [bulkPrice, setBulkPrice] = useState("");
+  const [bulkCompareAtPrice, setBulkCompareAtPrice] = useState("");
+  const [bulkInventory, setBulkInventory] = useState("");
+  const [bulkTags, setBulkTags] = useState("");
+  const [bulkFeatures, setBulkFeatures] = useState("");
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
@@ -57,6 +64,13 @@ export default function BulkUploadForm() {
       const formData = new FormData();
       formData.append("csvFile", csvFile);
       formData.append("marketplace", marketplace);
+      
+      // Add bulk defaults if provided
+      if (bulkPrice) formData.append("bulkPrice", bulkPrice);
+      if (bulkCompareAtPrice) formData.append("bulkCompareAtPrice", bulkCompareAtPrice);
+      if (bulkInventory) formData.append("bulkInventory", bulkInventory);
+      if (bulkTags) formData.append("bulkTags", bulkTags);
+      if (bulkFeatures) formData.append("bulkFeatures", bulkFeatures);
 
       const response = await fetch("http://localhost:3001/products/bulk-upload", {
         method: "POST",
@@ -125,7 +139,7 @@ export default function BulkUploadForm() {
             </li>
           </ul>
           <p className="text-sm text-gray-600 mt-2">
-            Example: title,description,folderPath,price,compareAtPrice,inventory,tags,features
+            <strong>Note:</strong> If CSV rows are missing optional fields, the bulk default values below will be used.
           </p>
         </div>
 
@@ -144,6 +158,85 @@ export default function BulkUploadForm() {
               <option value="amazon">Amazon</option>
               <option value="meesho">Meesho</option>
             </select>
+          </div>
+
+          {/* Bulk Default Values */}
+          <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <h3 className="font-semibold mb-3 text-gray-800">
+              Bulk Default Values (Optional)
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              These values will be used for any product in the CSV that doesn't have these fields specified.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Default Price
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={bulkPrice}
+                  onChange={(e) => setBulkPrice(e.target.value)}
+                  placeholder="99.99"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Default Compare At Price
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={bulkCompareAtPrice}
+                  onChange={(e) => setBulkCompareAtPrice(e.target.value)}
+                  placeholder="199.98"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Default Inventory
+                </label>
+                <input
+                  type="number"
+                  value={bulkInventory}
+                  onChange={(e) => setBulkInventory(e.target.value)}
+                  placeholder="100"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Default Tags
+                </label>
+                <input
+                  type="text"
+                  value={bulkTags}
+                  onChange={(e) => setBulkTags(e.target.value)}
+                  placeholder="tag1,tag2,tag3"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Default Features
+                </label>
+                <input
+                  type="text"
+                  value={bulkFeatures}
+                  onChange={(e) => setBulkFeatures(e.target.value)}
+                  placeholder="Feature 1,Feature 2,Feature 3"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
           </div>
 
           {/* CSV File Upload */}

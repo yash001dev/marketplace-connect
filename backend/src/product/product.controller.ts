@@ -12,7 +12,11 @@ import { FilesInterceptor, FileInterceptor } from "@nestjs/platform-express";
 import { ProductService } from "./product.service";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { AIVisionService } from "../ai/ai-vision.service";
-import { BulkUploadService, BulkUploadResult } from "./bulk-upload.service";
+import {
+  BulkUploadService,
+  BulkUploadResult,
+  BulkUploadDefaults,
+} from "./bulk-upload.service";
 
 @Controller("products")
 export class ProductController {
@@ -146,7 +150,12 @@ export class ProductController {
   @UseInterceptors(FileInterceptor("csvFile"))
   async bulkUploadProducts(
     @UploadedFile() csvFile: Express.Multer.File,
-    @Body("marketplace") marketplace: string
+    @Body("marketplace") marketplace: string,
+    @Body("bulkPrice") bulkPrice?: string,
+    @Body("bulkCompareAtPrice") bulkCompareAtPrice?: string,
+    @Body("bulkInventory") bulkInventory?: string,
+    @Body("bulkTags") bulkTags?: string,
+    @Body("bulkFeatures") bulkFeatures?: string
   ) {
     if (!csvFile) {
       throw new BadRequestException("Please upload a CSV file");
@@ -157,9 +166,21 @@ export class ProductController {
     }
 
     try {
+      // Build defaults object
+      const defaults: BulkUploadDefaults = {
+        price: bulkPrice ? parseFloat(bulkPrice) : undefined,
+        compareAtPrice: bulkCompareAtPrice
+          ? parseFloat(bulkCompareAtPrice)
+          : undefined,
+        inventory: bulkInventory ? parseInt(bulkInventory, 10) : undefined,
+        tags: bulkTags || undefined,
+        features: bulkFeatures || undefined,
+      };
+
       const results = await this.bulkUploadService.processBulkUpload(
         csvFile,
-        marketplace
+        marketplace,
+        defaults
       );
 
       const successCount = results.filter((r) => r.success).length;

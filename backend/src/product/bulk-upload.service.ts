@@ -26,10 +26,18 @@ export interface BulkUploadResult {
 interface CSVRow {
   title: string;
   description: string;
-  folderpath: string; // lowercase because headers are normalized
+  folderpath: string; // lowercase because headers are normalized, required
   price?: string;
   compareatprice?: string; // lowercase because headers are normalized
   inventory?: string;
+  tags?: string;
+  features?: string;
+}
+
+export interface BulkUploadDefaults {
+  price?: number;
+  compareAtPrice?: number;
+  inventory?: number;
   tags?: string;
   features?: string;
 }
@@ -45,7 +53,8 @@ export class BulkUploadService {
    */
   async processBulkUpload(
     csvFile: Express.Multer.File,
-    marketplace: string
+    marketplace: string,
+    defaults?: BulkUploadDefaults
   ): Promise<BulkUploadResult[]> {
     try {
       // Parse CSV
@@ -73,18 +82,20 @@ export class BulkUploadService {
           // Get images from folder
           const images = await this.getImagesFromFolder(row.folderpath);
 
-          // Create product DTO
+          // Create product DTO with fallback to defaults
           const productDto: CreateProductDto = {
             title: row.title,
             description: row.description,
             marketplace: marketplace as MarketplaceType,
-            price: row.price ? parseFloat(row.price) : undefined,
+            price: row.price ? parseFloat(row.price) : defaults?.price,
             compareAtPrice: row.compareatprice
               ? parseFloat(row.compareatprice)
-              : undefined,
-            inventory: row.inventory ? parseInt(row.inventory, 10) : undefined,
-            tags: row.tags || "",
-            features: row.features || "",
+              : defaults?.compareAtPrice,
+            inventory: row.inventory
+              ? parseInt(row.inventory, 10)
+              : defaults?.inventory,
+            tags: row.tags || defaults?.tags || "",
+            features: row.features || defaults?.features || "",
           };
 
           // Create product

@@ -19,6 +19,8 @@ Create a CSV file with the following columns:
 | tags | No | Comma-separated tags | "headphones,wireless,audio" |
 | features | No | Comma-separated features | "Noise Cancellation,40hr Battery" |
 
+**Note:** `title`, `description`, and `folderPath` are required. If other fields are missing from the CSV, you can set bulk default values in the upload form that will apply to all products without those fields.
+
 ### 2. Organize Product Images
 Create a separate folder for each product's images:
 
@@ -42,9 +44,20 @@ C:/Projects/MarketPlace/product-images/
 ### 3. Upload Process
 
 1. Select your marketplace (Shopify, Amazon, or Meesho)
-2. Upload your CSV file via the drag-and-drop interface
-3. Click "Upload Products"
-4. Monitor the progress and results
+2. **(Optional)** Set bulk default values for fields like:
+   - Default price
+   - Default compare at price
+   - Default inventory
+   - Default tags
+   - Default features
+3. Upload your CSV file via the drag-and-drop interface
+4. Click "Upload Products"
+5. Monitor the progress and results
+
+**How Bulk Defaults Work:**
+- If a product row in the CSV is missing a field (e.g., no `price` column or empty value), the bulk default value is used
+- CSV values always take priority over bulk defaults
+- This allows you to specify common values once and only override them in the CSV when needed
 
 ## CSV Template
 
@@ -52,9 +65,15 @@ A sample template is available at `docs/bulk-upload-template.csv`:
 
 ```csv
 title,description,folderPath,price,compareAtPrice,inventory,tags,features
-"Premium Wireless Headphones","High-quality over-ear wireless headphones with noise cancellation","C:/Projects/MarketPlace/product-images/headphones",79.99,159.98,50,"headphones,wireless,audio","Noise Cancellation,40hr Battery,Bluetooth 5.0"
-"Smart Watch Series 5","Advanced fitness tracking smartwatch with heart rate monitor","C:/Projects/MarketPlace/product-images/smartwatch",199.99,,25,"smartwatch,fitness,wearable","Heart Rate Monitor,GPS Tracking,Waterproof"
+"Premium Wireless Headphones","High-quality noise cancellation","C:/images/headphones",79.99,159.98,50,"headphones,audio","Noise Cancellation,40hr Battery"
+"USB-C Cable 6ft","Fast charging USB-C cable","C:/images/cable",29.99,,,,
+"Phone Case Clear","Transparent protective case","C:/images/case",,,,,"phone,accessories","Shock Absorbent"
 ```
+
+**Examples:**
+- Row 1: All fields specified
+- Row 2: Missing compareAtPrice, inventory, tags, features (will use bulk defaults if set)
+- Row 3: Missing price, compareAtPrice, inventory (will use bulk defaults if set)
 
 ## Features
 
