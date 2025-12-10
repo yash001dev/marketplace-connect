@@ -4,9 +4,10 @@ import { useState } from 'react'
 import ProductForm from '@/components/ProductForm'
 import AIProductForm from '@/components/AIProductForm'
 import BulkUploadForm from '@/components/BulkUploadForm'
+import BulkUploadAIForm from '@/components/BulkUploadAIForm'
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'manual' | 'ai' | 'bulk'>('ai')
+  const [activeTab, setActiveTab] = useState<'manual' | 'ai' | 'bulk' | 'bulkAI'>('ai')
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -21,36 +22,46 @@ export default function Home() {
         </div>
         
         {/* Tab Navigation */}
-        <div className="mb-6 bg-white rounded-lg shadow-md p-2 flex gap-2">
+        <div className="mb-6 bg-white rounded-lg shadow-md p-2 grid grid-cols-2 md:grid-cols-4 gap-2">
           <button
             onClick={() => setActiveTab('ai')}
-            className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${
+            className={`py-3 px-4 rounded-lg font-semibold transition-all text-sm ${
               activeTab === 'ai'
                 ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            ✨ AI-Powered
+            ✨ AI Single
           </button>
           <button
             onClick={() => setActiveTab('manual')}
-            className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${
+            className={`py-3 px-4 rounded-lg font-semibold transition-all text-sm ${
               activeTab === 'manual'
                 ? 'bg-primary-600 text-white shadow-lg'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            ✍️ Manual Entry
+            ✍️ Manual
           </button>
           <button
             onClick={() => setActiveTab('bulk')}
-            className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${
+            className={`py-3 px-4 rounded-lg font-semibold transition-all text-sm ${
               activeTab === 'bulk'
                 ? 'bg-green-600 text-white shadow-lg'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            📁 Bulk Upload
+            📁 Bulk
+          </button>
+          <button
+            onClick={() => setActiveTab('bulkAI')}
+            className={`py-3 px-4 rounded-lg font-semibold transition-all text-sm ${
+              activeTab === 'bulkAI'
+                ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            🤖 Bulk AI
           </button>
         </div>
 
@@ -59,8 +70,10 @@ export default function Home() {
           <AIProductForm />
         ) : activeTab === 'manual' ? (
           <ProductForm />
-        ) : (
+        ) : activeTab === 'bulk' ? (
           <BulkUploadForm />
+        ) : (
+          <BulkUploadAIForm />
         )}
 
         <div className="mt-12 bg-white rounded-lg shadow-md p-6">

@@ -17,13 +17,19 @@ import {
   BulkUploadResult,
   BulkUploadDefaults,
 } from "./bulk-upload.service";
+import {
+  BulkUploadAIService,
+  BulkUploadAIResult,
+  BulkUploadAIDefaults,
+} from "./bulk-upload-ai.service";
 
 @Controller("products")
 export class ProductController {
   constructor(
     private readonly productService: ProductService,
     private readonly aiVisionService: AIVisionService,
-    private readonly bulkUploadService: BulkUploadService
+    private readonly bulkUploadService: BulkUploadService,
+    private readonly bulkUploadAIService: BulkUploadAIService
   ) {}
 
   @Post("analyze-image")
@@ -198,6 +204,70 @@ export class ProductController {
       throw new BadRequestException({
         success: false,
         message: error.message || "Failed to process bulk upload",
+        error: error.message,
+      });
+    }
+  }
+
+  @Post("bulk-upload-ai")
+  @UseInterceptors(FileInterceptor("csvFile"))
+  async bulkUploadProductsWithAI(
+    @UploadedFile() csvFile: Express.Multer.File,
+    @Body("marketplace") marketplace: string,
+    @Body("bulkPrice") bulkPrice?: string,
+    @Body("bulkCompareAtPrice") bulkCompareAtPrice?: string,
+    @Body("bulkInventory") bulkInventory?: string,
+    @Body("bulkTags") bulkTags?: string,
+    @Body("bulkFeatures") bulkFeatures?: string
+  ) {
+    if (!csvFile) {
+      throw new BadRequestException("Please upload a CSV file");
+    }
+
+    if (!marketplace) {
+      throw new BadRequestException("Marketplace is required");
+    }
+
+    // Check if AI is configured
+    if (!this.aiVisionService.isConfigured()) {
+      throw new BadRequestException(
+        "AI Vision not configured. Please add GEMINI_API_KEY to .env file. Get your free key at: https://aistudio.google.com/app/apikey"
+      );
+    }
+
+    try {
+      // Build defaults object
+      const defaults: BulkUploadAIDefaults = {
+        price: bulkPrice ? parseFloat(bulkPrice) : undefined,
+        compareAtPrice: bulkCompareAtPrice
+          ? parseFloat(bulkCompareAtPrice)
+          : undefined,
+        inventory: bulkInventory ? parseInt(bulkInventory, 10) : undefined,
+        tags: bulkTags || undefined,
+        features: bulkFeatures || undefined,
+      };
+
+      const results = await this.bulkUploadAIService.processBulkUploadWithAI(
+        csvFile,
+        marketplace,
+        defaults
+      );
+
+      const successCount = results.filter((r) => r.success).length;
+      const failedCount = results.filter((r) => !r.success).length;
+
+      return {
+        success: true,
+        totalProcessed: results.length,
+        successCount,
+        failedCount,
+        results,
+        message: `Bulk upload with AI completed. ${successCount} succeeded, ${failedCount} failed.`,
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        success: false,
+        message: error.message || "Failed to process bulk upload with AI",
         error: error.message,
       });
     }
