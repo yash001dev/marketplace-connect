@@ -602,4 +602,11 @@ export class ShopifyService {
       throw new Error("Unable to set inventory: No locations available");
     }
   }
+
+  /**
+   * Public method to execute GraphQL requests (for use by other services)
+   */
+  async executeGraphQL(query: string, variables: any = {}) {
+    return this.graphqlRequest(query, variables);
+  }
 }

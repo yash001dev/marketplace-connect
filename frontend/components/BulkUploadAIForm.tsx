@@ -138,6 +138,9 @@ export default function BulkUploadAIForm() {
               <strong>🤖 AI will generate:</strong> Product title, description, and features from the images.
               You only need to set common values like price, inventory, and tags below.
             </p>
+            <p className="text-sm text-blue-700 mt-2">
+              <strong>📸 Image Recognition:</strong> AI will analyze only the <strong>first image</strong> in each folder to generate product details. All images in the folder will be uploaded to the product.
+            </p>
           </div>
         </div>
 

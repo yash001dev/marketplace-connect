@@ -5,9 +5,10 @@ import ProductForm from '@/components/ProductForm'
 import AIProductForm from '@/components/AIProductForm'
 import BulkUploadForm from '@/components/BulkUploadForm'
 import BulkUploadAIForm from '@/components/BulkUploadAIForm'
+import MetaUpdateForm from '@/components/MetaUpdateForm'
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'manual' | 'ai' | 'bulk' | 'bulkAI'>('ai')
+  const [activeTab, setActiveTab] = useState<'manual' | 'ai' | 'bulk' | 'bulkAI' | 'meta'>('ai')
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -22,7 +23,7 @@ export default function Home() {
         </div>
         
         {/* Tab Navigation */}
-        <div className="mb-6 bg-white rounded-lg shadow-md p-2 grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="mb-6 bg-white rounded-lg shadow-md p-2 grid grid-cols-2 md:grid-cols-5 gap-2">
           <button
             onClick={() => setActiveTab('ai')}
             className={`py-3 px-4 rounded-lg font-semibold transition-all text-sm ${
@@ -63,6 +64,16 @@ export default function Home() {
           >
             🤖 Bulk AI
           </button>
+          <button
+            onClick={() => setActiveTab('meta')}
+            className={`py-3 px-4 rounded-lg font-semibold transition-all text-sm ${
+              activeTab === 'meta'
+                ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            🏷️ Meta SEO
+          </button>
         </div>
 
         {/* Tab Content */}
@@ -72,8 +83,10 @@ export default function Home() {
           <ProductForm />
         ) : activeTab === 'bulk' ? (
           <BulkUploadForm />
-        ) : (
+        ) : activeTab === 'bulkAI' ? (
           <BulkUploadAIForm />
+        ) : (
+          <MetaUpdateForm />
         )}
 
         <div className="mt-12 bg-white rounded-lg shadow-md p-6">

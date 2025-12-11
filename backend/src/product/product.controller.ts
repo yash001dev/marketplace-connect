@@ -22,6 +22,7 @@ import {
   BulkUploadAIResult,
   BulkUploadAIDefaults,
 } from "./bulk-upload-ai.service";
+import { MetaUpdateService, MetaUpdateResult } from "./meta-update.service";
 
 @Controller("products")
 export class ProductController {
@@ -29,7 +30,8 @@ export class ProductController {
     private readonly productService: ProductService,
     private readonly aiVisionService: AIVisionService,
     private readonly bulkUploadService: BulkUploadService,
-    private readonly bulkUploadAIService: BulkUploadAIService
+    private readonly bulkUploadAIService: BulkUploadAIService,
+    private readonly metaUpdateService: MetaUpdateService
   ) {}
 
   @Post("analyze-image")
@@ -268,6 +270,46 @@ export class ProductController {
       throw new BadRequestException({
         success: false,
         message: error.message || "Failed to process bulk upload with AI",
+        error: error.message,
+      });
+    }
+  }
+
+  @Post("meta-update")
+  @UseInterceptors(FileInterceptor("csvFile"))
+  async updateMetaFromCSV(
+    @UploadedFile() csvFile: Express.Multer.File,
+    @Body("marketplace") marketplace: string
+  ) {
+    if (!csvFile) {
+      throw new BadRequestException("Please upload a CSV file");
+    }
+
+    if (!marketplace) {
+      throw new BadRequestException("Marketplace is required");
+    }
+
+    try {
+      const results = await this.metaUpdateService.processMetaUpdates(
+        csvFile,
+        marketplace
+      );
+
+      const successCount = results.filter((r) => r.success).length;
+      const failedCount = results.filter((r) => !r.success).length;
+
+      return {
+        success: true,
+        totalProcessed: results.length,
+        successCount,
+        failedCount,
+        results,
+        message: `Meta update completed. ${successCount} succeeded, ${failedCount} failed.`,
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        success: false,
+        message: error.message || "Failed to process meta updates",
         error: error.message,
       });
     }
