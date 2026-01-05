@@ -38,7 +38,9 @@ export class ShopifyService {
     features?: string,
     price?: number,
     compareAtPrice?: number,
-    inventory?: number
+    inventory?: number,
+    metaTitle?: string,
+    metaDescription?: string
   ) {
     this.logger.log(`Creating product: ${title}`);
 
@@ -52,7 +54,9 @@ export class ShopifyService {
         description,
         tags,
         features,
-        publicationIds
+        publicationIds,
+        metaTitle,
+        metaDescription
       );
       const productId = product.id;
 
@@ -108,7 +112,9 @@ export class ShopifyService {
     description: string,
     tags?: string,
     features?: string,
-    publicationIds?: string[]
+    publicationIds?: string[],
+    metaTitle?: string,
+    metaDescription?: string
   ) {
     // Convert comma-separated tags to array
     const tagsArray = tags
@@ -152,6 +158,10 @@ export class ShopifyService {
             status
             createdAt
             tags
+            seo {
+              title
+              description
+            }
             metafields(first: 10) {
               nodes {
                 id
@@ -177,6 +187,17 @@ export class ShopifyService {
         tags: tagsArray,
       },
     };
+
+    // Add SEO fields if provided
+    if (metaTitle || metaDescription) {
+      variables.input.seo = {};
+      if (metaTitle) {
+        variables.input.seo.title = metaTitle;
+      }
+      if (metaDescription) {
+        variables.input.seo.description = metaDescription;
+      }
+    }
 
     // Publish to all sales channels
     if (publicationIds && publicationIds.length > 0) {

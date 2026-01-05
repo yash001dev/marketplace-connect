@@ -98,10 +98,32 @@ export default function BulkUploadForm() {
     setCsvFile(null);
   };
 
+  const downloadTemplate = () => {
+    const csvContent = `title,description,metaTitle,metaDescription,folderPath,price,compareAtPrice,inventory,tags,features
+"Premium Wireless Headphones","High-quality over-ear wireless headphones with noise cancellation","Premium Wireless Headphones - Noise Cancelling | YourBrand","Shop premium wireless headphones with active noise cancellation, 40hr battery life, and Bluetooth 5.0. Free shipping on orders over $50.","C:/Projects/MarketPlace/product-images/headphones",79.99,159.98,50,"headphones,wireless,audio","Noise Cancellation,40hr Battery,Bluetooth 5.0"
+"Smart Watch Series 5","Advanced fitness tracking smartwatch with heart rate monitor","Smart Watch Series 5 - Fitness Tracker | YourBrand","Track your fitness goals with our advanced smartwatch. Features heart rate monitor, GPS tracking, and waterproof design. Order today!","C:/Projects/MarketPlace/product-images/smartwatch",199.99,,25,"smartwatch,fitness,wearable","Heart Rate Monitor,GPS Tracking,Waterproof"`;
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "bulk-upload-template.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold mb-6">Bulk Product Upload</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">Bulk Product Upload</h2>
+          <button
+            onClick={downloadTemplate}
+            className="text-blue-600 hover:text-blue-700 underline text-sm"
+          >
+            Download CSV Template
+          </button>
+        </div>
 
         {/* CSV Format Instructions */}
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -114,8 +136,13 @@ export default function BulkUploadForm() {
               <strong>title</strong> (required) - Product title
             </li>
             <li>
-              <strong>description</strong> (required) - Product description (max
-              130 chars)
+              <strong>description</strong> (required) - Product description
+            </li>
+            <li>
+              <strong>metaTitle</strong> (required) - SEO meta title (55-60 chars recommended)
+            </li>
+            <li>
+              <strong>metaDescription</strong> (required) - SEO meta description (150-160 chars recommended)
             </li>
             <li>
               <strong>folderPath</strong> (required) - Absolute path to folder

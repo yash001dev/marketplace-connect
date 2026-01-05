@@ -11,7 +11,9 @@ Create a CSV file with the following columns:
 | Column | Required | Description | Example |
 |--------|----------|-------------|---------|
 | title | Yes | Product title | "Premium Wireless Headphones" |
-| description | Yes | Product description (max 130 chars) | "High-quality over-ear wireless headphones" |
+| description | Yes | Product description | "High-quality over-ear wireless headphones" |
+| metaTitle | Yes | SEO meta title (55-60 chars recommended) | "Premium Wireless Headphones - Noise Cancelling \| YourBrand" |
+| metaDescription | Yes | SEO meta description (150-160 chars) | "Shop premium wireless headphones with active noise cancellation, 40hr battery..." |
 | folderPath | Yes | Absolute path to folder with product images | "C:/Projects/MarketPlace/images/headphones" |
 | price | No | Product price | 79.99 |
 | compareAtPrice | No | Compare at price (auto-doubles if empty) | 159.98 |
@@ -19,7 +21,7 @@ Create a CSV file with the following columns:
 | tags | No | Comma-separated tags | "headphones,wireless,audio" |
 | features | No | Comma-separated features | "Noise Cancellation,40hr Battery" |
 
-**Note:** `title`, `description`, and `folderPath` are required. If other fields are missing from the CSV, you can set bulk default values in the upload form that will apply to all products without those fields.
+**Note:** `title`, `description`, `metaTitle`, `metaDescription`, and `folderPath` are required. The meta fields are used for SEO optimization in Shopify. If other fields are missing from the CSV, you can set bulk default values in the upload form that will apply to all products without those fields.
 
 ### 2. Organize Product Images
 Create a separate folder for each product's images:

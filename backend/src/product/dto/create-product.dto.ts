@@ -24,6 +24,14 @@ export class CreateProductDto {
   @IsNotEmpty()
   description: string;
 
+  @IsString()
+  @IsOptional()
+  metaTitle?: string;
+
+  @IsString()
+  @IsOptional()
+  metaDescription?: string;
+
   @IsEnum(MarketplaceType)
   @IsNotEmpty()
   marketplace: MarketplaceType;

@@ -20,6 +20,8 @@ export class ProductService {
       marketplace,
       title,
       description,
+      metaTitle,
+      metaDescription,
       tags,
       features,
       price,
@@ -37,7 +39,9 @@ export class ProductService {
           features,
           price,
           compareAtPrice,
-          inventory
+          inventory,
+          metaTitle,
+          metaDescription
         );
 
       case MarketplaceType.AMAZON:

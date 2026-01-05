@@ -26,6 +26,8 @@ export interface BulkUploadResult {
 interface CSVRow {
   title: string;
   description: string;
+  metatitle: string; // lowercase because headers are normalized, required
+  metadescription: string; // lowercase because headers are normalized, required
   folderpath: string; // lowercase because headers are normalized, required
   price?: string;
   compareatprice?: string; // lowercase because headers are normalized
@@ -69,12 +71,18 @@ export class BulkUploadService {
           this.logger.log(`Processing product: ${row.title}`);
 
           // Validate required fields
-          if (!row.title || !row.description || !row.folderpath) {
+          if (
+            !row.title ||
+            !row.description ||
+            !row.metatitle ||
+            !row.metadescription ||
+            !row.folderpath
+          ) {
             results.push({
               success: false,
               productTitle: row.title || "Unknown",
               error:
-                "Missing required fields (title, description, or folderPath)",
+                "Missing required fields (title, description, metaTitle, metaDescription, or folderPath)",
             });
             continue;
           }
@@ -86,6 +94,8 @@ export class BulkUploadService {
           const productDto: CreateProductDto = {
             title: row.title,
             description: row.description,
+            metaTitle: row.metatitle,
+            metaDescription: row.metadescription,
             marketplace: marketplace as MarketplaceType,
             price: row.price ? parseFloat(row.price) : defaults?.price,
             compareAtPrice: row.compareatprice

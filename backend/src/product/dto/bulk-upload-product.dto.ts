@@ -19,6 +19,14 @@ export class BulkProductDto {
 
   @IsString()
   @IsNotEmpty()
+  metaTitle: string;
+
+  @IsString()
+  @IsNotEmpty()
+  metaDescription: string;
+
+  @IsString()
+  @IsNotEmpty()
   folderPath: string;
 
   @IsNumber()
