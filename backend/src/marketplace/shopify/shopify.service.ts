@@ -10,21 +10,111 @@ interface StagedUploadTarget {
   parameters: Array<{ name: string; value: string }>;
 }
 
+interface TokenResponse {
+  access_token: string;
+  scope: string;
+  expires_in: number;
+}
+
 @Injectable()
 export class ShopifyService {
   private readonly logger = new Logger(ShopifyService.name);
   private readonly shopifyUrl: string;
-  private readonly accessToken: string;
+  private readonly clientId: string;
+  private readonly clientSecret: string;
   private readonly apiVersion: string;
+  private accessToken: string;
+  private tokenExpiresAt: number = 0;
 
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService
   ) {
     this.shopifyUrl = this.configService.get<string>("SHOPIFY_STORE_URL");
-    this.accessToken = this.configService.get<string>("SHOPIFY_ACCESS_TOKEN");
+    this.clientId = this.configService.get<string>("SHOPIFY_CLIENT_ID");
+    this.clientSecret = this.configService.get<string>("SHOPIFY_CLIENT_SECRET");
     this.apiVersion =
       this.configService.get<string>("SHOPIFY_API_VERSION") || "2024-01";
+
+    // Initialize token on startup
+    this.initializeToken();
+  }
+
+  /**
+   * Initialize token on service startup
+   */
+  private async initializeToken() {
+    try {
+      await this.ensureValidToken();
+      this.logger.log("Shopify authentication initialized successfully");
+    } catch (error) {
+      this.logger.error("Failed to initialize Shopify token", error);
+    }
+  }
+
+  /**
+   * Acquire an access token using client credentials grant
+   */
+  private async acquireAccessToken(): Promise<TokenResponse> {
+    this.logger.log("Acquiring new access token from Shopify...");
+
+    try {
+      const tokenUrl = `https://${this.shopifyUrl}/admin/oauth/access_token`;
+
+      const response = await firstValueFrom(
+        this.httpService.post<TokenResponse>(
+          tokenUrl,
+          new URLSearchParams({
+            grant_type: "client_credentials",
+            client_id: this.clientId,
+            client_secret: this.clientSecret,
+          }),
+          {
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+          }
+        )
+      );
+
+      this.logger.log("Access token acquired successfully");
+      return response.data;
+    } catch (error) {
+      this.logger.error(
+        "Failed to acquire access token",
+        error.response?.data || error.message
+      );
+      throw new Error("Failed to authenticate with Shopify");
+    }
+  }
+
+  /**
+   * Ensure we have a valid token, refresh if needed
+   */
+  private async ensureValidToken(): Promise<string> {
+    const now = Date.now();
+
+    // If token doesn't exist or will expire in the next 5 minutes, refresh it
+    if (!this.accessToken || now >= this.tokenExpiresAt - 5 * 60 * 1000) {
+      const tokenResponse = await this.acquireAccessToken();
+      this.accessToken = tokenResponse.access_token;
+
+      // Set expiration time (expires_in is in seconds, convert to milliseconds)
+      this.tokenExpiresAt = now + tokenResponse.expires_in * 1000;
+
+      this.logger.log(
+        `Token will expire at: ${new Date(this.tokenExpiresAt).toISOString()}`
+      );
+    }
+
+    return this.accessToken;
+  }
+
+  /**
+   * Get the current valid access token
+   */
+  async getAccessToken(): Promise<string> {
+    return this.ensureValidToken();
   }
 
   /**
@@ -491,6 +581,9 @@ export class ShopifyService {
   private async graphqlRequest(query: string, variables: any = {}) {
     const url = `https://${this.shopifyUrl}/admin/api/${this.apiVersion}/graphql.json`;
 
+    // Ensure we have a valid token before making the request
+    const token = await this.ensureValidToken();
+
     try {
       const response = await firstValueFrom(
         this.httpService.post(
@@ -502,7 +595,7 @@ export class ShopifyService {
           {
             headers: {
               "Content-Type": "application/json",
-              "X-Shopify-Access-Token": this.accessToken,
+              "X-Shopify-Access-Token": token,
             },
           }
         )
