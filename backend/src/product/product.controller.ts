@@ -23,6 +23,11 @@ import {
   BulkUploadAIDefaults,
 } from "./bulk-upload-ai.service";
 import { MetaUpdateService, MetaUpdateResult } from "./meta-update.service";
+import {
+  BulkUploadVariantService,
+  BulkUploadVariantResult,
+  BulkUploadVariantDefaults,
+} from "./bulk-upload-variant.service";
 
 @Controller("products")
 export class ProductController {
@@ -31,7 +36,8 @@ export class ProductController {
     private readonly aiVisionService: AIVisionService,
     private readonly bulkUploadService: BulkUploadService,
     private readonly bulkUploadAIService: BulkUploadAIService,
-    private readonly metaUpdateService: MetaUpdateService
+    private readonly metaUpdateService: MetaUpdateService,
+    private readonly bulkUploadVariantService: BulkUploadVariantService
   ) {}
 
   @Post("analyze-image")
@@ -310,6 +316,68 @@ export class ProductController {
       throw new BadRequestException({
         success: false,
         message: error.message || "Failed to process meta updates",
+        error: error.message,
+      });
+    }
+  }
+
+  @Post("bulk-upload-variant")
+  @UseInterceptors(FileInterceptor("csvFile"))
+  async bulkUploadProductsWithVariants(
+    @UploadedFile() csvFile: Express.Multer.File,
+    @Body("marketplace") marketplace: string,
+    @Body("bulkPrice") bulkPrice?: string,
+    @Body("bulkCompareAtPrice") bulkCompareAtPrice?: string,
+    @Body("bulkInventory") bulkInventory?: string,
+    @Body("bulkTags") bulkTags?: string,
+    @Body("bulkFeatures") bulkFeatures?: string
+  ) {
+    if (!csvFile) {
+      throw new BadRequestException("Please upload a CSV file");
+    }
+
+    if (!marketplace) {
+      throw new BadRequestException("Marketplace is required");
+    }
+
+    try {
+      const defaults: BulkUploadVariantDefaults = {
+        price: bulkPrice ? parseFloat(bulkPrice) : undefined,
+        compareAtPrice: bulkCompareAtPrice
+          ? parseFloat(bulkCompareAtPrice)
+          : undefined,
+        inventory: bulkInventory ? parseInt(bulkInventory, 10) : undefined,
+        tags: bulkTags || undefined,
+        features: bulkFeatures || undefined,
+      };
+
+      const results =
+        await this.bulkUploadVariantService.processBulkUploadWithVariants(
+          csvFile,
+          marketplace,
+          defaults
+        );
+
+      const successCount = results.filter((r) => r.success).length;
+      const failedCount = results.filter((r) => !r.success).length;
+      const totalVariants = results.reduce(
+        (sum, r) => sum + r.variantsCreated,
+        0
+      );
+
+      return {
+        success: true,
+        totalProcessed: results.length,
+        successCount,
+        failedCount,
+        totalVariants,
+        results,
+        message: `Bulk upload with variants completed. ${successCount} products with ${totalVariants} variants created, ${failedCount} failed.`,
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        success: false,
+        message: error.message || "Failed to process bulk upload with variants",
         error: error.message,
       });
     }

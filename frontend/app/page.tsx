@@ -6,9 +6,10 @@ import AIProductForm from '@/components/AIProductForm'
 import BulkUploadForm from '@/components/BulkUploadForm'
 import BulkUploadAIForm from '@/components/BulkUploadAIForm'
 import MetaUpdateForm from '@/components/MetaUpdateForm'
+import BulkUploadVariantForm from '@/components/BulkUploadVariantForm'
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'manual' | 'ai' | 'bulk' | 'bulkAI' | 'meta'>('ai')
+  const [activeTab, setActiveTab] = useState<'manual' | 'ai' | 'bulk' | 'bulkAI' | 'meta' | 'bulkVariant'>('ai')
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -23,7 +24,7 @@ export default function Home() {
         </div>
         
         {/* Tab Navigation */}
-        <div className="mb-6 bg-white rounded-lg shadow-md p-2 grid grid-cols-2 md:grid-cols-5 gap-2">
+        <div className="mb-6 bg-white rounded-lg shadow-md p-2 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
           <button
             onClick={() => setActiveTab('ai')}
             className={`py-3 px-4 rounded-lg font-semibold transition-all text-sm ${
@@ -65,6 +66,16 @@ export default function Home() {
             🤖 Bulk AI
           </button>
           <button
+            onClick={() => setActiveTab('bulkVariant')}
+            className={`py-3 px-4 rounded-lg font-semibold transition-all text-sm ${
+              activeTab === 'bulkVariant'
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            🎨 Variants
+          </button>
+          <button
             onClick={() => setActiveTab('meta')}
             className={`py-3 px-4 rounded-lg font-semibold transition-all text-sm ${
               activeTab === 'meta'
@@ -85,6 +96,8 @@ export default function Home() {
           <BulkUploadForm />
         ) : activeTab === 'bulkAI' ? (
           <BulkUploadAIForm />
+        ) : activeTab === 'bulkVariant' ? (
+          <BulkUploadVariantForm />
         ) : (
           <MetaUpdateForm />
         )}

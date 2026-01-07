@@ -6,6 +6,7 @@ import { AIModule } from "../ai/ai.module";
 import { BulkUploadService } from "./bulk-upload.service";
 import { BulkUploadAIService } from "./bulk-upload-ai.service";
 import { MetaUpdateService } from "./meta-update.service";
+import { BulkUploadVariantService } from "./bulk-upload-variant.service";
 
 @Module({
   imports: [MarketplaceModule, AIModule],
@@ -15,6 +16,7 @@ import { MetaUpdateService } from "./meta-update.service";
     BulkUploadService,
     BulkUploadAIService,
     MetaUpdateService,
+    BulkUploadVariantService,
   ],
 })
 export class ProductModule {}

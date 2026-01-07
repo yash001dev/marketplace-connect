@@ -59,7 +59,9 @@ export class BulkUploadAIService {
     try {
       // Parse CSV
       const csvRows = await this.parseCSV(csvFile.buffer.toString("utf-8"));
-      this.logger.log(`Parsed ${csvRows.length} products from CSV for AI processing`);
+      this.logger.log(
+        `Parsed ${csvRows.length} products from CSV for AI processing`
+      );
 
       const results: BulkUploadAIResult[] = [];
 
@@ -99,7 +101,9 @@ export class BulkUploadAIService {
             images[0].mimetype
           );
 
-          this.logger.log(`AI Analysis complete for ${row.id}: ${aiAnalysis.title}`);
+          this.logger.log(
+            `AI Analysis complete for ${row.id}: ${aiAnalysis.title}`
+          );
 
           // Create product DTO using AI analysis + defaults
           const productDto: CreateProductDto = {
@@ -110,7 +114,8 @@ export class BulkUploadAIService {
             compareAtPrice: defaults?.compareAtPrice,
             inventory: defaults?.inventory,
             tags: defaults?.tags || aiAnalysis.suggestedTags?.join(",") || "",
-            features: defaults?.features || aiAnalysis.features?.join(",") || "",
+            features:
+              defaults?.features || aiAnalysis.features?.join(",") || "",
           };
 
           // Create product
@@ -133,9 +138,14 @@ export class BulkUploadAIService {
             },
           });
 
-          this.logger.log(`✓ Successfully created product ${row.id}: ${aiAnalysis.title}`);
+          this.logger.log(
+            `✓ Successfully created product ${row.id}: ${aiAnalysis.title}`
+          );
         } catch (error) {
-          this.logger.error(`✗ Failed to create product ${row.id}:`, error.message);
+          this.logger.error(
+            `✗ Failed to create product ${row.id}:`,
+            error.message
+          );
           results.push({
             success: false,
             productId: row.id,
