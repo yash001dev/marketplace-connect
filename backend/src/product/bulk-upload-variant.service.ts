@@ -126,6 +126,34 @@ export class BulkUploadVariantService {
 
           console.log("ROW:", row);
 
+          // Parse and validate price/inventory from row, falling back to defaults
+          const rowPrice = row.price?.trim()
+            ? parseFloat(row.price.trim())
+            : null;
+          const rowCompareAtPrice = row.compareatprice?.trim()
+            ? parseFloat(row.compareatprice.trim())
+            : null;
+          const rowInventory = row.inventory?.trim()
+            ? parseInt(row.inventory.trim(), 10)
+            : null;
+
+          // Use row value if valid and greater than 0, otherwise use defaults
+          // Treat 0 or negative values as "not provided" to use defaults
+          const price =
+            rowPrice !== null && !isNaN(rowPrice) && rowPrice > 0
+              ? rowPrice
+              : defaults?.price;
+          const compareAtPrice =
+            rowCompareAtPrice !== null &&
+            !isNaN(rowCompareAtPrice) &&
+            rowCompareAtPrice > 0
+              ? rowCompareAtPrice
+              : defaults?.compareAtPrice;
+          const inventory =
+            rowInventory !== null && !isNaN(rowInventory) && rowInventory >= 0
+              ? rowInventory
+              : defaults?.inventory;
+
           // Create product with variants
           const result = await this.createProductWithVariants(
             row.title,
@@ -137,13 +165,9 @@ export class BulkUploadVariantService {
             variantData,
             marketplace,
             {
-              price: row.price ? parseFloat(row.price) : defaults?.price,
-              compareAtPrice: row.compareatprice
-                ? parseFloat(row.compareatprice)
-                : defaults?.compareAtPrice,
-              inventory: row.inventory
-                ? parseInt(row.inventory, 10)
-                : defaults?.inventory,
+              price,
+              compareAtPrice,
+              inventory,
               tags: row.tags || defaults?.tags || "",
               features: row.features || defaults?.features || "",
             }
@@ -431,13 +455,13 @@ export class BulkUploadVariantService {
       );
     }
 
-    // Step 1: Create the base product with the first variant
+    // Step 1: Create the base product with a temporary dummy variant
     const publicationIds = await (
       this.shopifyService as any
     ).getAllPublications();
 
-    const firstVariantValue = variantData[0].name;
-    const remainingVariants = variantData.slice(1);
+    // Use a temporary dummy variant value to establish the product structure
+    const dummyVariantValue = "_temp_variant_";
 
     const product = await this.createBasicProduct(
       title,
@@ -445,7 +469,7 @@ export class BulkUploadVariantService {
       metaTitle,
       metaDescription,
       variantOption,
-      firstVariantValue,
+      dummyVariantValue,
       options.tags,
       options.features,
       publicationIds
@@ -453,45 +477,45 @@ export class BulkUploadVariantService {
 
     const productId = product.id;
     this.logger.log(
-      `Product created with ID: ${productId} and first variant: ${firstVariantValue}`
+      `Product created with ID: ${productId} with temporary dummy variant`
     );
 
-    // Get the auto-created first variant and update its pricing
-    const firstVariant = product.variants.edges[0].node;
-    const inventory = options.inventory !== undefined ? options.inventory : 20;
+    // Get the auto-created dummy variant ID
+    const dummyVariantId = product.variants.edges[0].node.id;
+
+    // Use provided inventory or default to 20
+    const inventory =
+      options.inventory !== undefined && options.inventory !== null
+        ? options.inventory
+        : 20;
     const locationId = await (
       this.shopifyService as any
     ).getPrimaryLocationId();
 
-    // Update first variant with pricing
-    await this.updateVariantsPricing(
+    // Step 2: Create ALL real variants using productVariantsBulkCreate with pricing
+    const allVariantNames = variantData.map((v) => v.name);
+    this.logger.log(
+      `Creating ${allVariantNames.length} real variants with pricing: ${allVariantNames.join(", ")}`
+    );
+
+    const allVariants = await this.createVariantsBulk(
       productId,
-      [firstVariant],
+      variantOption,
+      allVariantNames,
       options.price,
       options.compareAtPrice,
       inventory,
       locationId
     );
 
-    let allVariants = [firstVariant];
+    this.logger.log(
+      `✓ Created ${allVariants.length} variants with productVariantsBulkCreate`
+    );
 
-    // Step 2: Create remaining variants using productVariantsBulkCreate (if any)
-    if (remainingVariants.length > 0) {
-      const newVariants = await this.createVariantsBulk(
-        productId,
-        variantOption,
-        remainingVariants.map((v) => v.name),
-        options.price,
-        options.compareAtPrice,
-        inventory,
-        locationId
-      );
-
-      allVariants = [...allVariants, ...newVariants];
-      this.logger.log(
-        `Created ${newVariants.length} additional variants with productVariantsBulkCreate`
-      );
-    }
+    // Step 3: Delete the temporary dummy variant
+    this.logger.log(`Deleting temporary dummy variant...`);
+    await this.deleteVariant(productId, dummyVariantId);
+    this.logger.log(`✓ Deleted temporary dummy variant`);
 
     this.logger.log(
       `Total ${allVariants.length} variants created with price: ${options.price}, compareAt: ${options.compareAtPrice}, inventory: ${inventory}`
@@ -670,16 +694,19 @@ export class BulkUploadVariantService {
   }
 
   /**
-   * Delete a variant
+   * Delete a variant using productVariantsBulkDelete
    */
   private async deleteVariant(
     productId: string,
     variantId: string
   ): Promise<void> {
     const mutation = `
-      mutation productVariantDelete($productId: ID!, $variantId: ID!) {
-        productVariantDelete(productId: $productId, variantId: $variantId) {
-          deletedProductVariantId
+      mutation productVariantsBulkDelete($productId: ID!, $variantsIds: [ID!]!) {
+        productVariantsBulkDelete(productId: $productId, variantsIds: $variantsIds) {
+          product {
+            id
+            title
+          }
           userErrors {
             field
             message
@@ -690,7 +717,7 @@ export class BulkUploadVariantService {
 
     const variables = {
       productId,
-      variantId,
+      variantsIds: [variantId],
     };
 
     const response = await this.shopifyService.executeGraphQL(
@@ -698,12 +725,15 @@ export class BulkUploadVariantService {
       variables
     );
 
-    if (response.productVariantDelete.userErrors.length > 0) {
-      this.logger.warn(
-        `Warning deleting default variant: ${JSON.stringify(response.productVariantDelete.userErrors)}`
+    if (response.productVariantsBulkDelete.userErrors.length > 0) {
+      this.logger.error(
+        `Failed to delete variant: ${JSON.stringify(response.productVariantsBulkDelete.userErrors)}`
+      );
+      throw new Error(
+        `Failed to delete variant: ${JSON.stringify(response.productVariantsBulkDelete.userErrors)}`
       );
     } else {
-      this.logger.log(`✓ Deleted default variant`);
+      this.logger.log(`✓ Deleted variant successfully`);
     }
   }
 
@@ -766,18 +796,34 @@ export class BulkUploadVariantService {
         ],
       };
 
-      // Set price if provided
-      if (price !== undefined && price > 0) {
+      // Set price if provided (must be a valid positive number)
+      if (
+        price !== undefined &&
+        price !== null &&
+        !isNaN(price) &&
+        price >= 0
+      ) {
         input.price = price.toString();
       }
 
-      // Set compareAtPrice if provided
-      if (compareAtPrice !== undefined && compareAtPrice > 0) {
+      // Set compareAtPrice if provided (must be a valid positive number)
+      if (
+        compareAtPrice !== undefined &&
+        compareAtPrice !== null &&
+        !isNaN(compareAtPrice) &&
+        compareAtPrice >= 0
+      ) {
         input.compareAtPrice = compareAtPrice.toString();
       }
 
-      // Set inventory if provided
-      if (inventory !== undefined && inventory >= 0 && locationId) {
+      // Set inventory if provided (must be a valid non-negative number)
+      if (
+        inventory !== undefined &&
+        inventory !== null &&
+        !isNaN(inventory) &&
+        inventory >= 0 &&
+        locationId
+      ) {
         input.inventoryQuantities = [
           {
             availableQuantity: inventory,
@@ -849,18 +895,34 @@ export class BulkUploadVariantService {
         id: variant.id,
       };
 
-      // Always set price if provided
-      if (price !== undefined && price > 0) {
+      // Set price if provided (must be a valid positive number)
+      if (
+        price !== undefined &&
+        price !== null &&
+        !isNaN(price) &&
+        price >= 0
+      ) {
         input.price = price.toString();
       }
 
-      // Set compareAtPrice if provided
-      if (compareAtPrice !== undefined && compareAtPrice > 0) {
+      // Set compareAtPrice if provided (must be a valid positive number)
+      if (
+        compareAtPrice !== undefined &&
+        compareAtPrice !== null &&
+        !isNaN(compareAtPrice) &&
+        compareAtPrice >= 0
+      ) {
         input.compareAtPrice = compareAtPrice.toString();
       }
 
-      // Always set inventory (default 20)
-      if (inventory !== undefined && inventory >= 0 && locationId) {
+      // Set inventory if provided (must be a valid non-negative number)
+      if (
+        inventory !== undefined &&
+        inventory !== null &&
+        !isNaN(inventory) &&
+        inventory >= 0 &&
+        locationId
+      ) {
         input.inventoryQuantities = [
           {
             availableQuantity: inventory,
