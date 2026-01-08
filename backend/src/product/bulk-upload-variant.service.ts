@@ -1371,7 +1371,8 @@ export class BulkUploadVariantService {
    * Parse CSV file
    */
   private async parseCSV(csvContent: string): Promise<CSVRowVariant[]> {
-    const lines = csvContent.split("\n").filter((line) => line.trim() !== "");
+    // Parse CSV respecting quoted fields with newlines
+    const lines = this.splitCSVIntoRows(csvContent);
 
     if (lines.length < 2) {
       throw new Error("CSV file is empty or missing header row");
@@ -1399,6 +1400,50 @@ export class BulkUploadVariantService {
       }
 
       rows.push(row as CSVRowVariant);
+    }
+
+    return rows;
+  }
+
+  /**
+   * Split CSV content into rows while respecting quoted fields with newlines
+   */
+  private splitCSVIntoRows(csvContent: string): string[] {
+    const rows: string[] = [];
+    let currentRow = "";
+    let inQuotes = false;
+
+    for (let i = 0; i < csvContent.length; i++) {
+      const char = csvContent[i];
+      const nextChar = csvContent[i + 1];
+
+      if (char === '"') {
+        currentRow += char;
+        // Handle escaped quotes (double quotes)
+        if (inQuotes && nextChar === '"') {
+          currentRow += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if ((char === '\n' || char === '\r') && !inQuotes) {
+        // End of row - only if not inside quotes
+        if (currentRow.trim() !== '') {
+          rows.push(currentRow);
+          currentRow = "";
+        }
+        // Skip \r\n sequence
+        if (char === '\r' && nextChar === '\n') {
+          i++;
+        }
+      } else {
+        currentRow += char;
+      }
+    }
+
+    // Add the last row if not empty
+    if (currentRow.trim() !== '') {
+      rows.push(currentRow);
     }
 
     return rows;
