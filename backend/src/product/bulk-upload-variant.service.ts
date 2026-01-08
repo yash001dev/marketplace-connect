@@ -587,6 +587,7 @@ export class BulkUploadVariantService {
         .split("\n")
         .map((f) => f.trim())
         .filter((f) => f);
+      console.log("FEATURE LINES:", featureLines);
       const listItems = featureLines.map((feature) => ({
         type: "list-item",
         children: [{ type: "text", value: feature }],
@@ -675,6 +676,12 @@ export class BulkUploadVariantService {
           key: "new_custom_description",
           value: featuresRichText,
           type: "rich_text_field",
+        },
+        {
+          namespace: "custom",
+          key: "product_note",
+          value: "Choose Your Model Inside",
+          type: "single_line_text_field",
         },
       ];
     }
