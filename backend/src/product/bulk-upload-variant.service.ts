@@ -393,11 +393,14 @@ export class BulkUploadVariantService {
    */
   private async uploadGeneralProductImages(
     productId: string,
-    images: ImageFile[]
+    images: ImageFile[],
+    productTitle: string
   ): Promise<void> {
     this.logger.log(`Uploading ${images.length} general product images...`);
 
-    for (const image of images) {
+    for (let i = 0; i < images.length; i++) {
+      const image = images[i];
+      const imageIndex = i + 1;
       try {
         this.logger.log(`Processing general image: ${image.originalname}`);
 
@@ -410,10 +413,12 @@ export class BulkUploadVariantService {
         this.logger.log(`✓ Uploaded general image to staged URL`);
 
         // Step 3: Create media and attach to product (no variant ID)
+        const altText = `${productTitle} (${imageIndex})`;
         const media = await this.createProductMedia(
           productId,
           stagedTarget.resourceUrl,
-          undefined // No variant ID for general images
+          undefined, // No variant ID for general images
+          altText
         );
 
         this.logger.log(
@@ -538,14 +543,15 @@ export class BulkUploadVariantService {
       this.logger.log(
         `Found ${generalImages.length} general product images to upload`
       );
-      await this.uploadGeneralProductImages(productId, generalImages);
+      await this.uploadGeneralProductImages(productId, generalImages, title);
     }
 
     // Then upload variant-specific images
     const mediaResults = await this.uploadVariantImages(
       productId,
       variantData,
-      variants
+      variants,
+      title
     );
 
     this.logger.log(
@@ -966,7 +972,8 @@ export class BulkUploadVariantService {
   private async uploadVariantImages(
     productId: string,
     variantData: Array<{ name: string; images: ImageFile[] }>,
-    variants: any[]
+    variants: any[],
+    productTitle: string
   ): Promise<any[]> {
     const allMediaResults = [];
 
@@ -1006,7 +1013,9 @@ export class BulkUploadVariantService {
       const mediaResults = await this.uploadAndAttachMediaToVariant(
         productId,
         variant.id,
-        images
+        images,
+        productTitle,
+        name
       );
 
       allMediaResults.push({
@@ -1030,7 +1039,9 @@ export class BulkUploadVariantService {
   private async uploadAndAttachMediaToVariant(
     productId: string,
     variantId: string,
-    images: ImageFile[]
+    images: ImageFile[],
+    productTitle: string,
+    variantName: string
   ): Promise<any[]> {
     const mediaResults = [];
 
@@ -1038,7 +1049,9 @@ export class BulkUploadVariantService {
       `Starting upload of ${images.length} images for variant ${variantId}`
     );
 
-    for (const image of images) {
+    for (let i = 0; i < images.length; i++) {
+      const image = images[i];
+      const imageIndex = i + 1;
       try {
         this.logger.log(
           `Processing image: ${image.originalname} (${image.size} bytes)`
@@ -1060,10 +1073,12 @@ export class BulkUploadVariantService {
         this.logger.log(
           `Step 3: Creating product media and attaching to variant...`
         );
+        const altText = `${productTitle} - ${variantName} (${imageIndex})`;
         const media = await this.createProductMedia(
           productId,
           stagedTarget.resourceUrl,
-          variantId
+          variantId,
+          altText
         );
         this.logger.log(
           `✓ Media created with ID: ${media?.id}, Status: ${media?.status}`
@@ -1142,10 +1157,11 @@ export class BulkUploadVariantService {
   private async createProductMedia(
     productId: string,
     resourceUrl: string,
-    variantId?: string
+    variantId?: string,
+    altText?: string
   ): Promise<any> {
     this.logger.log(
-      `Creating media for product ${productId}, resourceUrl: ${resourceUrl}, variantId: ${variantId || "none"}`
+      `Creating media for product ${productId}, resourceUrl: ${resourceUrl}, variantId: ${variantId || "none"}, altText: ${altText || "none"}`
     );
 
     const mutation = `
@@ -1173,9 +1189,9 @@ export class BulkUploadVariantService {
       mediaContentType: "IMAGE",
     };
 
-    // Attach to specific variant if provided
-    if (variantId) {
-      mediaInput.alt = `Variant image`;
+    // Add alt text if provided
+    if (altText) {
+      mediaInput.alt = altText;
     }
 
     const variables = {
